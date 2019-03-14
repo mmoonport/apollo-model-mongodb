@@ -51,19 +51,19 @@ class Abstract extends SchemaDirectiveVisitor {
       .forEach(type => {
         iface.mmAbstractTypes.push(type);
         iface._addFromInterfaces(type);
-        if (!(0, _utils.getDirective)(type, 'model')) {
-          throw new _sdlSyntaxException.default(`
+        if (!getDirective(type, 'model')) {
+          throw new SDLSyntaxException(`
             Type '${type.name}' is inherited from abstract interface '${iface.name}' and should be marked with @model directive
           `, SHOULD_BE_MODEL, [type, iface]);
         }
 
-        type._interfaces.filter(i => i != iface).forEach(i => {
-          if ((0, _utils.getDirective)(i, 'model')) {
-            throw new _sdlSyntaxException.default(`Type '${type.name}' can not inherit both '${iface.name}' and '${i.name}' because they marked with @abstract and @model directives`, ABSTRACT_WITH_MODEL, [i, iface]);
+        type._interfaces.filter(i => i !== iface).forEach(i => {
+          if (getDirective(i, 'model')) {
+            throw new SDLSyntaxException(`Type '${type.name}' can not inherit both '${iface.name}' and '${i.name}' because they marked with @abstract and @model directives`, ABSTRACT_WITH_MODEL, [i, iface]);
           }
 
-          if ((0, _utils.getDirective)(i, 'embedded')) {
-            throw new _sdlSyntaxException.default(`Type '${type.name}' can not inherit both '${iface.name}' and '${i.name}' because they marked with @abstract and @embedded directives`, ABSTRACT_WITH_EMBEDDED, [i, iface]);
+          if (getDirective(i, 'embedded')) {
+            throw new SDLSyntaxException(`Type '${type.name}' can not inherit both '${iface.name}' and '${i.name}' because they marked with @abstract and @embedded directives`, ABSTRACT_WITH_EMBEDDED, [i, iface]);
           }
         });
         type._fields = { ...iface._fields, ...type._fields };
@@ -74,7 +74,7 @@ class Abstract extends SchemaDirectiveVisitor {
       return iface.mmAbstractTypes.find(
         t => t.mmCollectionName === data['mmCollection']
       );
-    };
+    };f
   }
 }
 
