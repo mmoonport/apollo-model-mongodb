@@ -74,7 +74,7 @@ class Abstract extends SchemaDirectiveVisitor {
       return iface.mmAbstractTypes.find(
         t => t.mmCollectionName === data['mmCollection']
       );
-    };f
+    };
   }
 }
 
