@@ -764,14 +764,14 @@ const createInput = ({ name, initialType, kind, inputTypes }) => {
   ) {
     fields.disconnect = {
       name: 'disconnect',
-      type: whereType,
-      mmTransform: createInputTransform(whereType, typeWrap.isInterface()),
+      type: whereUniqueType,
+      mmTransform: createInputTransform(whereUniqueType, typeWrap.isInterface()),
     };
 
     fields.delete = {
       name: 'delete',
-      type: whereType,
-      mmTransform: createInputTransform(whereType, typeWrap.isInterface()),
+      type: whereUniqueType,
+      mmTransform: createInputTransform(whereUniqueType, typeWrap.isInterface()),
     };
   }
 
