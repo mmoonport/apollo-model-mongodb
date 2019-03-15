@@ -312,13 +312,13 @@ class RelationDirective extends SchemaDirectiveVisitor {
             )
           );
         } else {
-          delete_ids = input.delete.map(selector =>
+          delete_ids = input.delete.map(async selector =>
             this._deleteOneQuery({ selector, context })
           );
         }
       }
-      disconnect_ids = await disconnect_ids;
-      delete_ids = await delete_ids;
+      disconnect_ids = await Promise.all(disconnect_ids);
+      delete_ids = await Promise.all(delete_ids);
 
       delete_ids = delete_ids.filter(id => id);
       let ids = [...disconnect_ids, ...delete_ids];
