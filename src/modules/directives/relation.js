@@ -330,6 +330,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
     } else {
       if ([...connect_ids, ...create_ids].length) {
         let prev = parent[storeField] || [];
+        prev = prev.filter(id => id);
 
         response[storeField] = [...prev, ...connect_ids, ...create_ids];
       }
@@ -391,7 +392,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
           let rid = r;
           if (d instanceof DBRef) {
             let { $id: dID } = dbRef(d);
-            did = dID
+            did = dID;
           }
 
           if (r instanceof DBRef) {
@@ -399,7 +400,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
             rid = rID;
           }
 
-          return rid === did;
+          return rid.toString() === did.toString();
 
         });
         return !found;
