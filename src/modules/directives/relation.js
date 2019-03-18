@@ -329,7 +329,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
       return { [storeField]: [...connect_ids, ...create_ids] };
     } else {
       if ([...connect_ids, ...create_ids].length) {
-        response[storeField][$mmPushAll] = [...connect_ids, ...create_ids];
+        response[storeField]['$mmPushAll'] = [...connect_ids, ...create_ids];
       }
       if (input.disconnect) {
         if (this.isAbstract) {
@@ -383,7 +383,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
 
       delete_ids = delete_ids.filter(id => id);
       if ([...disconnect_ids, ...delete_ids].length) {
-        response[storeField][$mmPushAll] = [...disconnect_ids, ...delete_ids];
+        response[storeField]['$mmPushAll'] = [...disconnect_ids, ...delete_ids];
       }
     }
     return response;
