@@ -519,7 +519,7 @@ export default class ModelMongo {
         }
 
         parent = await this.QueryExecutor({
-          type: UPDATE_ONE,
+          type: FIND_ONE,
           collection: modelType.mmCollectionName,
           selector,
           context,

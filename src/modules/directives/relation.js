@@ -385,8 +385,24 @@ class RelationDirective extends SchemaDirectiveVisitor {
 
       delete_ids = delete_ids.filter(id => id);
 
-      response[storeField] = response[storeField].filter(r=>{
-        return ![...disconnect_ids, ...delete_ids].includes(r)
+      response[storeField] = response[storeField].filter(r => {
+        let found = [...disconnect_ids, ...delete_ids].find(d => {
+          let did = d;
+          let rid = r;
+          if (d instanceof DBRef) {
+            let { $id: dID } = dbRef(d);
+            did = dID
+          }
+
+          if (r instanceof DBRef) {
+            let { $id: rID } = dbRef(r);
+            rid = rID;
+          }
+
+          return rid === did;
+
+        });
+        return !found;
       });
     }
     return response;
