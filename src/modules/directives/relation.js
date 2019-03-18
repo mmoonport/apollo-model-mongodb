@@ -383,7 +383,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
 
       delete_ids = delete_ids.filter(id => id);
       if ([...disconnect_ids, ...delete_ids].length) {
-        response[storeField]['$mmPushAll'] = [...disconnect_ids, ...delete_ids];
+        response[storeField]['$mmPullAll'] = [...disconnect_ids, ...delete_ids];
       }
     }
     return response;
