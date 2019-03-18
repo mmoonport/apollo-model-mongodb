@@ -324,16 +324,12 @@ class RelationDirective extends SchemaDirectiveVisitor {
     connect_ids = await connect_ids;
     create_ids = await create_ids;
 
-
+    let ids = parent[storeField] || [];
     if (isCreate) {
-      return { [storeField]: [...connect_ids, ...create_ids] };
+      ids = [...connect_ids, ...create_ids];
     } else {
-      if ([...connect_ids, ...create_ids].length) {
-        let prev = parent[storeField] || [];
-        prev = prev.filter(id => id);
+      ids = [...ids, ...connect_ids, ...create_ids];
 
-        response[storeField] = [...prev, ...connect_ids, ...create_ids];
-      }
       if (input.disconnect) {
         if (this.isAbstract) {
           disconnect_ids = Promise.all(
@@ -386,7 +382,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
 
       delete_ids = delete_ids.filter(id => id);
 
-      response[storeField] = response[storeField].filter(r => {
+      ids = ids.filter(r => {
         let found = [...disconnect_ids, ...delete_ids].find(d => {
           let did = d;
           let rid = r;
@@ -406,7 +402,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
         return !found;
       });
     }
-    return response;
+    return { [storeField]: ids };
   };
 
   _onSchemaBuild = ({ field }) => {
