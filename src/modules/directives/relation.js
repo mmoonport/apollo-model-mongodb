@@ -329,7 +329,9 @@ class RelationDirective extends SchemaDirectiveVisitor {
       return { [storeField]: [...connect_ids, ...create_ids] };
     } else {
       if ([...connect_ids, ...create_ids].length) {
-        response[storeField]['$mmPushAll'] = [...connect_ids, ...create_ids];
+        let prev = parent[storeField] || [];
+
+        response[storeField] = [...prev, ...connect_ids, ...create_ids];
       }
       if (input.disconnect) {
         if (this.isAbstract) {
@@ -382,9 +384,10 @@ class RelationDirective extends SchemaDirectiveVisitor {
       delete_ids = await Promise.all(delete_ids);
 
       delete_ids = delete_ids.filter(id => id);
-      if ([...disconnect_ids, ...delete_ids].length) {
-        response[storeField]['$mmPullAll'] = [...disconnect_ids, ...delete_ids];
-      }
+
+      response[storeField] = response[storeField].filter(r=>{
+        return ![...disconnect_ids, ...delete_ids].includes(r)
+      });
     }
     return response;
   };

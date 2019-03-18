@@ -503,24 +503,10 @@ export default class ModelMongo {
         //   args.data,
         //   KIND.UPDATE_ALWAYS
         // );
-        let data = await applyInputTransform({ parent, context })(
-          args.data,
-          updateType
-        );
-        let {
-          doc,
-          validations,
-          arrayFilters,
-          postResolvers,
-        } = prepareUpdateDoc(data);
-        // console.log(doc, validations, arrayFilters);
         let selector = await applyInputTransform({ parent, context })(
           args.where,
           whereType
         );
-        if (Object.keys(validations).length !== 0) {
-          selector = { $and: [selector, validations] };
-        }
 
         if (
           typeWrap.interfaceWithDirective('model') &&
@@ -532,6 +518,27 @@ export default class ModelMongo {
           ] = typeWrap.realType().mmDiscriminator;
         }
 
+        parent = await this.QueryExecutor({
+          type: UPDATE_ONE,
+          collection: modelType.mmCollectionName,
+          selector,
+          context,
+        });
+
+        let data = await applyInputTransform({ parent, context })(
+          args.data,
+          updateType
+        );
+        let {
+          doc,
+          validations,
+          arrayFilters,
+          postResolvers,
+        } = prepareUpdateDoc(data);
+        // console.log(doc, validations, arrayFilters);
+        if (Object.keys(validations).length !== 0) {
+          selector = { $and: [selector, validations] };
+        }
         return this.QueryExecutor({
           type: UPDATE_ONE,
           collection: modelType.mmCollectionName,
