@@ -324,10 +324,11 @@ class RelationDirective extends SchemaDirectiveVisitor {
     connect_ids = await connect_ids;
     create_ids = await create_ids;
 
-    let ids = parent[storeField] || [];
+    let ids;
     if (isCreate) {
       ids = [...connect_ids, ...create_ids];
     } else {
+      ids = parent ? parent[storeField] || [] : [];
       ids = [...ids, ...connect_ids, ...create_ids];
 
       if (input.disconnect) {
