@@ -18,5 +18,5 @@ export const UPDATE_ONE_NESTED = 'updateOneNested';
 export const UPDATE_MANY_NESTED = 'updateManyNested';
 export const UPDATE_ONE_REQUIRED_NESTED = 'updateOneRequiredNested';
 export const UPDATE_MANY_REQUIRED_NESTED = 'updateManyRequiredNested';
-
+export const NESTED_INPUT = 'Nested';
 export const UPDATE_WITH_WHERE_NESTED = 'updateWithWhereNested';

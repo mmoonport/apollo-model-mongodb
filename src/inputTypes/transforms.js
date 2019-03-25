@@ -43,10 +43,6 @@ export const validateAndTransformNestedInput = (type, isMany) => params => {
         `You should not fill multiple fields in ${type.name} type`
       );
     }
-  } else {
-    if (value.delete && Object.keys(value).length > 1) {
-      throw new UserInputError(`Wrong input in ${type.name} type`);
-    }
   }
   
   return _.mapValues(params, value => _.merge(...Object.values(value)));
