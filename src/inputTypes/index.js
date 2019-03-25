@@ -223,7 +223,7 @@ class InputTypesClass {
 
   _defaultTransformToInputCreateUpdate = ({ field, kind }) => {
     let isCreate = kind === KIND.CREATE;
-    let fieldTypeWrap = new _typeWrap.default(field.type);
+    let fieldTypeWrap = new TypeWrap(field.type);
     let typeWrap = fieldTypeWrap.clone();
 
     if (fieldTypeWrap.isNested()) {
