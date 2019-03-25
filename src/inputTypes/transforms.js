@@ -45,7 +45,7 @@ export const validateAndTransformNestedInput = (type, isMany) => params => {
     }
   }
   
-  return _.mapValues(params, value => _.merge(...Object.values(value)));
+  return params;
 };
 
 const validateAndTransformInterfaceValue = type => value => {
