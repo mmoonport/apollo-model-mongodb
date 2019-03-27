@@ -34,19 +34,7 @@ export const flattenNested = params => {
   // return _.head(Object.values(params));
 };
 
-export const validateAndTransformNestedInput = (type, isMany) => params => {
-  let value = _.head(Object.values(params));
-  
-  if (!isMany) {
-    if (Object.keys(value).length > 1) {
-      throw new UserInputError(
-        `You should not fill multiple fields in ${type.name} type`
-      );
-    }
-  }
-  
-  return params;
-};
+export const validateAndTransformNestedInput = (type, isMany) => params => params;
 
 const validateAndTransformInterfaceValue = type => value => {
   if (Object.keys(value).length > 1) {
