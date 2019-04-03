@@ -209,7 +209,7 @@ class InputTypesClass {
           Transforms.fieldInputTransform(field, kind),
           Transforms.applyNestedTransform(type),
           // Transforms.log(3),
-          Transforms.validateAndTransformNestedInput(type, fieldTypeWrap.isMany()),
+          // Transforms.validateAndTransformNestedInput(type, fieldTypeWrap.isMany()),
           !isCreate && fieldTypeWrap.isNested()
             ? params =>
               !Array.isArray(_.head(Object.values(params)))

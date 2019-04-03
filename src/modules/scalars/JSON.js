@@ -9,7 +9,7 @@ export const resolvers = {
   JSON: new GraphQLScalarType({
     name: 'JSON',
     description: 'JSON Scalar. returns ',
-    serialize: val => JSON.stringify(val),
+    serialize: val => val,
     parseValue: val => JSON.parse(val),
     parseLiteral: ast => {
       try {
