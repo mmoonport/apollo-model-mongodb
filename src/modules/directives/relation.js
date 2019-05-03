@@ -9,14 +9,14 @@ import { UserInputError } from 'apollo-server';
 
 import * as _ from 'lodash';
 
-import { allQueryArgs, getDirective, getRelationFieldName } from '../../utils';
+import { allQueryArgs, getDirective, getRelationFieldName, prepareUpdateDoc } from '../../utils';
 
 import {
   DELETE_ONE,
   DISTINCT,
   FIND_IDS,
   INSERT_MANY,
-  INSERT_ONE,
+  INSERT_ONE, UPDATE_ONE,
 } from '../../queryExecutor';
 
 import InputTypes from '../../inputTypes';
@@ -260,10 +260,6 @@ class RelationDirective extends SchemaDirectiveVisitor {
     let connect_ids = [];
     let create_ids = [];
 
-    let response = {
-      [storeField]: {},
-    };
-
 
     if (input.connect) {
       ////Connect
@@ -403,7 +399,33 @@ class RelationDirective extends SchemaDirectiveVisitor {
         return !found;
       });
     }
-    return { [storeField]: ids };
+
+    if (input.updateMany) {
+      await Promise.all(input.updateMany.map(updateMany => {
+        let { where, data } = updateMany;
+        let {
+          doc,
+          validations,
+          arrayFilters,
+        } = prepareUpdateDoc(data);
+        if (Object.keys(validations).length !== 0) {
+          where = { $and: [where, validations] };
+        }
+        return this._updateOneQuery({
+          selector: where,
+          doc,
+          options: { arrayFilters },
+          context,
+        });
+      }));
+    }
+
+    if (ids) {
+      return { [storeField]: ids };
+    } else {
+      return {};
+    }
+
   };
 
   _onSchemaBuild = ({ field }) => {
@@ -688,6 +710,24 @@ class RelationDirective extends SchemaDirectiveVisitor {
       context,
     }).then(res => res.map(item => item[relationField]));
   };
+
+  _updateOneQuery = async ({ collection, selector, doc, context, ...rest }) => {
+    const { field: relationField } = this.args;
+    let {
+      mmCollectionName,
+      mmStoreField: storeField,
+      mmInterfaceModifier,
+    } = this;
+    doc = { ...doc, ...mmInterfaceModifier };
+    collection = collection || mmCollectionName;
+    return queryExecutor({
+      type: UPDATE_ONE,
+      selector,
+      collection,
+      doc,
+      context,
+    });
+  };
 }
 
 let createInputTransform = (type, isInterface) =>
@@ -749,7 +789,7 @@ const createInput = ({ name, initialType, kind, inputTypes }) => {
     let updateKind = INPUT_UPDATE_MANY_RELATION
       ? INPUT_UPDATE_MANY_RELATION_UPDATE
       : INPUT_UPDATE_MANY_REQUIRED_RELATION_UPDATE;
-    let updateManyType = inputTypes.get(initialType, updateKind);
+    let updateManyType = new GraphQLList(inputTypes.get(initialType, updateKind));
     fields.updateMany = {
       name: 'updateMany',
       type: updateManyType,
