@@ -1,219 +1,205 @@
 import { SchemaDirectiveVisitor } from 'graphql-tools';
-import pluralize from 'pluralize';
+import DataLoader from 'dataloader';
 
 import SDLSyntaxException from '../../src/sdlSyntaxException';
 import { getDirective, lowercaseFirstLetter } from '../../src/utils';
+import ObjectHash from 'object-hash';
+import { ObjectID } from 'mongodb';
+import { mongoGraphqlConfig } from '../MongoGraphql';
+import Types from '../inputTypes';
+import * as KINDS from '../inputTypes/kinds';
 
-export const NO_INTERFACE_ARGS = 'noInterfaceArgs';
-export const MULTIPLE_MODEL = 'multipleModel';
-export const MODEL_WITH_EMBEDDED = 'modelWithEmbedded';
 
-export const typeDef = `directive @model(collection:String=null, abstract:Boolean=false, from:String=null) on OBJECT | INTERFACE`;
+const dataLoaderMatch = (key) => item => {
+  if (item instanceof ObjectID) {
+    return key.toString() === item.toString();
+  }
+  return key === item;
+};
 
-
-const buildDirective = (directiveName, typeDef, visitors = {}) => (mananger) => {
-  let visitor = class extends SchemaDirectiveVisitor {
-    constructor(props) {
-      super(props);
-      this.manager = mananger;
+const getDefaults = (defaults, ...args) => {
+  return Object.entries(defaults).reduce((obj = {}, [key, value]) => {
+    if (typeof value === 'function') {
+      value = value(...args);
     }
-
-  };
-
-  Object.entries(visitors).forEach(([key, method]) => {
-    visitor[key] = method.bind(visitor);
+    obj[key] = value;
+    return obj;
   });
+};
 
-  return {
-    typeDef,
-    visitor,
+const setupDefault = (schemaType) => {
+  let overrides = this.server.schemaProps(schemaType);
+
+  schemaType.selector = (selector = {}, context) => {
+    if (schemaType.from) {
+      schemaType._fields = { ...schemaType.from._fields, ...schemaType._fields };
+      selector = schemaType.from.selector(selector, context);
+    }
+    if (schemaType.inheritKey) {
+      selector = { ...selector, [schemaType.inheritField]: schemaType.inheritKey };
+    }
+
+    if (overrides && overrides.selector) {
+      selector = overrides.selector(selector, context);
+    }
+    return selector;
   };
+
+
+  let defaults = Object.entries({ ...schemaType._fields, '___': overrides }).reduce((defaults = {
+    createDefaults: {},
+    updateDefaults: {},
+  }, [name, field]) => {
+    let { createDefaults = {}, updateDefaults = {} } = field;
+    defaults['createDefaults'] = { ...defaults['createDefaults'], ...createDefaults };
+    defaults['updateDefaults'] = { ...defaults['updateDefaults'], ...updateDefaults };
+    return defaults;
+  });
+  schemaType = { ...schemaType, ...defaults };
 };
 
-
-class Model extends SchemaDirectiveVisitor {
-  visitObject(object) {
-    const { collection } = this.args;
-    object.collection = collection || object.name;
-
-    //validate usage
-    object._interfaces.forEach(iface => {
-      if (getDirective(iface, 'model')) {
-        throw new SDLSyntaxException(
-          `Type '${
-            object.name
-            }' can not be marked with @model directive because it's interface ${
-            iface.name
-            } marked with @model directive`,
-          NO_INTERFACE_ARGS,
-          [object, iface],
-        );
-      }
-      if (getDirective(iface, 'embedded')) {
-        throw new SDLSyntaxException(
-          `Type '${
-            object.name
-            }' can not be marked with @model directive because it's interface ${
-            iface.name
-            } marked with @embedded directive`,
-          MODEL_WITH_EMBEDDED,
-          [object, iface],
-        );
-      }
-    });
-  }
-
-  visitInterface(iface) {
-    const { collection, abstract } = this.args;
-    if (!abstract) {
-      object.collection;
-    }
-
-    const { _typeMap: SchemaTypes } = this.schema;
-
-    Object.values(SchemaTypes)
-      .filter(type => type._interfaces && type._interfaces.includes(iface))
-      .forEach(type => {
-        type.mmCollectionName = iface.mmCollectionName;
-
-        //validate usage
-        type._interfaces
-          .filter(i => i != iface)
-          .forEach(i => {
-            if (getDirective(i, 'model')) {
-              throw new SDLSyntaxException(
-                `Type '${type.name}' can not inherit both '${
-                  iface.name
-                  }' and '${i.name}' because they marked with @model directive`,
-                MULTIPLE_MODEL,
-                [i, iface],
-              );
-            }
-            if (getDirective(i, 'embedded')) {
-              throw new SDLSyntaxException(
-                `Type '${type.name}' can not inherit both '${
-                  iface.name
-                  }' and '${
-                  i.name
-                  }' because they marked with @model and @embedded directives`,
-                MODEL_WITH_EMBEDDED,
-                [i, iface],
-              );
-            }
-          });
-      });
-
-    //Set discriminator
-    if (!iface.mmDiscriminatorField) {
-      iface.mmDiscriminatorField = '_type';
-    }
-
-    Object.values(SchemaTypes)
-      .filter(type => type._interfaces && type._interfaces.includes(iface))
-      .forEach(type => {
-        if (!type.mmDiscriminator) {
-          type.mmDiscriminator = lowercaseFirstLetter(type.name);
-        }
-      });
-    iface.mmDiscriminatorMap = iface.mmDiscriminatorMap || {};
-
-    iface.mmOnSchemaInit = () => {
-      Object.values(SchemaTypes)
-        .filter(
-          type =>
-            Array.isArray(type._interfaces) && type._interfaces.includes(iface),
-        )
-        .forEach(type => {
-          type.mmDiscriminatorField = iface.mmDiscriminatorField;
-          iface.mmDiscriminatorMap[type.mmDiscriminator] = type.name;
-        });
-    };
-
-    iface.resolveType = doc => {
-      return iface.mmDiscriminatorMap[doc[iface.mmDiscriminatorField]];
-    };
-    ////////////
-  }
-}
-
-export const schemaDirectives = {
-  model: Model,
-};
-
-
-export default buildDirective(
+mongoGraphqlConfig.buildDirective(
   'model',
-  `directive @model(collection:String=null, abstract:Boolean=false, inherit:Boolean=false, from:String=null) on OBJECT | INTERFACE`,
+  `directive @model(collection:String=null, implements:GraphQLInterfaceType=null) on OBJECT | INTERFACE
+   
+   type Account implements Document @model {
+    purchases: [Purchases]
+   }
+   
+   type Order @query([
+   {query: {account: 'owner', paid:true}, queryName: "myLast10Purchases"}
+   ])
+   
+  `,
   {
     visitObject(object) {
-      let { abstract, inherit, from, collection } = this.args;
-      if (abstract || from || inherit) {
-        throw new SDLSyntaxException(
-          `Type '${
-            object.name
-            }' can not be marked with abstract, inherit or from`,
-          NO_INTERFACE_ARGS,
-          [object],
-        );
-      }
+      let { collection } = this.args;
       object.isModel = true;
-      object.collection = collection || this.manager.collectionNameResolver(object.name);
-      object.defaultSelector = (context) => {
-        let selector = {};
-        if (object._interfaces.length) {
-          let iface = object._interfaces[0];
-          selector = { ...selector, ...iface.defaultSelector(context) };
-        }
-        let defaultQueryResolver = prev => (c) => prev;
-        let defaultQuery = object.defaultQuery || defaultQueryResolver;
-        return defaultQuery(selector)(context);
-      };
-      this.manager.handleModel(object);
+      object.collection = collection || this.server.collectionNameResolver(object.name);
+      let setup = setupDefault.bind(this);
+      setup(object);
+      this.setupODM(object);
+
     },
 
     visitInterface(iface) {
       const { _typeMap: SchemaTypes } = this.schema;
-      let { abstract, inherit, from, collection } = this.args;
-      let fromInterface;
-      if (from) {
-        let { [from]: fromInterface } = SchemaTypes;
-        if (!fromInterface) {
-          throw new SDLSyntaxException(`Interface ${from} doesn't exist.`, 'invalidFrom', [iface]);
-        }
-        iface.from = fromInterface;
-      }
-
-      if (inherit && abstract) {
-        throw new SDLSyntaxException(`Interface ${iface.name} cannot set be inherit and abstract`, 'conflictingInterfaceType', [iface]);
-      }
-
-      if (inherit) {
-        if (fromInterface && fromInterface.inherit && collection) {
-          throw new SDLSyntaxException(`Interface ${iface.name} cannot set collection ${collection} because it collection is set by inherited interface ${fromInterface.name}`, 'alreadyInherited', [iface, fromInterface]);
-        }
+      let { collection, implements: i } = this.args;
+      let setup = setupDefault.bind(this);
+      if (i) {
+        iface.from = i;
         iface.inherit = true;
-        if (fromInterface.inherit) {
-          iface.inheritKey = `${fromInterface.inheritKey}.${iface.name}`;
-          iface.inheritField = fromInterface.inheritField;
+        if (iface.from.inherit) {
+          iface.inheritKey = `${iface.from.inheritKey || iface.from.name}.${iface.name}`;
+          iface.inheritField = iface.from.inheritField;
         } else {
           iface.inheritKey = iface.name;
           iface.inheritField = '_cls'; //TODO: Make this configurable
-          iface.collection = collection || this.manager.collectionNameResolver(iface.name);
+          iface.collection = collection || this.server.collectionNameResolver(iface.name);
 
         }
-      } else if (abstract) {
-        iface.abstract = true;
-        iface.collection = null;
+        setup(iface);
+        this.setupODM(iface);
       }
+    },
 
-      iface.defaultSelector = (context, selector = {}) => {
-        if (iface.from) {
-          selector = { ...selector, ...iface.defaultSelector(context, selector) };
+    setupODM(schemaType) {
+      let db = this.server.db.collection(schemaType.collection);
+      let { ...cursor } = db;
+      schemaType.cursor = cursor;
+      schemaType.cursor.findDataLoader = (key, value, selector, options) => {
+        let hashKey = ObjectHash({ key, selector, options });
+        if (!schemaType.dataLoaders[hashKey]) {
+          schemaType.dataLoaders[hashKey] = new DataLoader(
+            keys => {
+              return db.find({ [key]: { $in: keys }, ...selector }, options)
+                .toArray()
+                .then(data =>
+                  keys.map(
+                    key =>
+                      data.find(dataLoaderMatch(key)) || null,
+                  ),
+                );
+            },
+            { cache: false },
+          );
         }
-        let defaultQueryResolver = prev => (c) => prev;
-        let defaultQuery = iface.defaultQuery || defaultQueryResolver;
-        return defaultQuery(selector)(context);
+        return schemaType.dataLoaders[hashKey];
       };
 
+      schemaType.preSave = (doc, creating = false, context) => doc;
+      schemaType.postSave = (result, context) => false;
+
+
+      schemaType.findOne = async (key, value, context, info) => {
+        let selector = { ...schemaType.selector(context, info) };
+        return await schemaType.cursor.findDataLoader(key, value, selector, {});
+      };
+      schemaType.findById = async (id, context) => {
+        return await schemaType.findOne(schemaType.pk, id, context);
+      };
+
+      schemaType.findUnique = async (field, value, context, info) => {
+        return await schemaType.findOne(field, value, context, info);
+      };
+      schemaType.find = async (selector, options, context) => {
+        selector = { ...selector, ...schemaType.selector(context) };
+        return await schemaType.cursor.find(selector, options);
+      };
+
+      schemaType.insertOne = async (doc, context) => {
+        let defaults = getDefaults(schemaType.createDefaults, doc, context);
+        doc = { ...defaults, ...doc };
+        doc = schemaType.preSave(doc, true, context);
+        let result = await schemaType.cursor.insertOne(doc);
+        let postSave = schemaType.postSave(result, context);
+        if (postSave) {
+          result = await schemaType.cursor.updateOne({ [schemaType.pk]: result[schemaType.pk] }, postSave);
+        }
+        return result;
+      };
+
+      schemaType.insertMany = async (docs, options, context) => {
+        docs = docs.map(doc => {
+          let defaults = getDefaults(schemaType.createDefaults, doc, context);
+          doc = { ...defaults, ...doc };
+          return schemaType.preSave(doc, true, context);
+        });
+        let results = await schemaType.cursor.insertMany(docs, options);
+        results = results.map(async result => {
+          let postSave = schemaType.postSave(result, context);
+          if (postSave) {
+            result = await schemaType.cursor.updateOne({ [schemaType.pk]: result[schemaType.pk] }, postSave);
+          }
+          return result;
+        });
+
+        return results;
+      };
+
+      schemaType.updateOne = (id, doc, context) => {
+      };
+
+      schemaType.updateMany = (ids, doc, context) => {
+      };
+
+      schemaType.deleteOne = (id, context) => {
+      };
+
+      schemaType.deleteMany = (ids, context) => {
+      };
     },
   });
+
+mongoGraphqlConfig.buildDirective(
+  'abstract',
+  `directive @abstract(implements:GraphQLInterfaceType) on INTERFACE`,
+  {
+    visitInterface(iface) {
+      let { implements: i } = this.args;
+      let setup = setupDefault.bind(this);
+      iface.from = i;
+      setup(iface);
+    },
+  },
+);

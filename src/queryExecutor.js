@@ -53,7 +53,7 @@ const queryExecutor = DB => async params => {
     context = {},
   } = params;
   // console.dir({ type, collection, selector, options }, { depth: null });
-  let { skip, limit, sort, arrayFilters = [] } = options;
+  let { skip, limit, sort, arrayFilters = [], upsert = false } = options;
 
   // console.log('\n\n');
   // console.log({ type, collectionName });
@@ -130,13 +130,15 @@ const queryExecutor = DB => async params => {
       return Collection.findOneAndDelete(selector).then(res => res.value);
     }
     case UPDATE_MANY: {
-      return Collection.updateMany(selector, docs, { arrayFilters }).then(
-        res => res.ops
-      );
+      return Collection.updateMany(selector, docs, {
+        arrayFilters,
+        upsert,
+      }).then(res => res.ops);
     }
     case UPDATE_ONE: {
       return Collection.findOneAndUpdate(selector, doc, {
         returnOriginal: false,
+        upsert,
         arrayFilters,
       }).then(res => res.value);
     }
