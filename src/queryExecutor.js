@@ -130,7 +130,7 @@ const queryExecutor = DB => async params => {
       return Collection.findOneAndDelete(selector).then(res => res.value);
     }
     case UPDATE_MANY: {
-      return Collection.updateMany(selector, docs, {
+      return Collection.updateMany(selector, doc, {
         arrayFilters,
         upsert,
       }).then(res => res.ops);
