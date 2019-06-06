@@ -53,7 +53,7 @@ const queryExecutor = DB => async params => {
     context = {},
   } = params;
   // console.dir({ type, collection, selector, options }, { depth: null });
-  let { skip, limit, sort, arrayFilters = [], upsert = false } = options;
+  let { skip, limit, sort, arrayFilters, upsert = false } = options;
 
   // console.log('\n\n');
   // console.log({ type, collectionName });
