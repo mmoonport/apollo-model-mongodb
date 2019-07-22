@@ -342,7 +342,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
         } else {
           ////Disconnect
           let selector = { $or: input.disconnect };
-          disconnect_ids = this._distinctQuery({
+          disconnect_ids = await this._distinctQuery({
             selector,
             context,
           });
