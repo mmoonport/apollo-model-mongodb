@@ -5,18 +5,22 @@ export const typeDef = gql`
   scalar JSON
 `;
 
+
+const parseJSON = val => {
+  if(typeof val === "object") {
+    return val;
+  }else if(typeof val === "string") {
+    return JSON.parse(val);
+  }
+  return val;
+};
+
 export const resolvers = {
   JSON: new GraphQLScalarType({
     name: 'JSON',
     description: 'JSON Scalar. returns ',
     serialize: val => val,
-    parseValue: val => JSON.parse(val),
-    parseLiteral: ast => {
-      try {
-        return JSON.parse(ast.value);
-      } catch (e) {
-        return ast.value;
-      }
-    },
+    parseValue: val => parseJSON(val),
+    parseLiteral: ast => parseJSON(ast.value),
   }),
 };
