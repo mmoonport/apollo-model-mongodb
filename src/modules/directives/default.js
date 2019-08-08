@@ -20,12 +20,18 @@ class DefaultDirective extends SchemaDirectiveVisitor {
     let typeWrap = new TypeWrap(field.type);
     let realType = typeWrap.realType();
     try {
-      if (realType instanceof GraphQLBoolean) {
-        value = JSON.parse(value);
-      } else if (realType instanceof GraphQLFloat) {
-        value = parseFloat(value);
-      } else if (realType instanceof GraphQLInt) {
-        value = parseInt(value);
+      switch (realType.name) {
+        case 'Boolean':
+          value = JSON.parse(value);
+          break;
+        case 'Float':
+          value = parseFloat(value);
+          break;
+        case 'Int':
+          value = parseInt(value);
+          break;
+        default:
+          break;
       }
     } catch (e) {
       //skip parsing error
