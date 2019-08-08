@@ -21,9 +21,6 @@ class DefaultDirective extends SchemaDirectiveVisitor {
     let realType = typeWrap.realType();
     try {
       switch (realType.name) {
-        case 'Boolean':
-          value = JSON.parse(value);
-          break;
         case 'Float':
           value = parseFloat(value);
           break;
@@ -31,6 +28,7 @@ class DefaultDirective extends SchemaDirectiveVisitor {
           value = parseInt(value);
           break;
         default:
+          value = JSON.parse(value);
           break;
       }
     } catch (e) {
