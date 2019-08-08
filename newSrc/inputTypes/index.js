@@ -240,6 +240,8 @@ class TypesClass {
       fields: {},
     });
     newType.initialType = initialType;
+    newType.subType = subType;
+    newType.kind = kind;
     newType.getFields();
     return newType;
   };

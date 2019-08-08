@@ -29,10 +29,11 @@ const getDefaults = (defaults, ...args) => {
 
 const setupDefault = (schemaType) => {
   let overrides = this.server.schemaProps(schemaType);
-
+  if (schemaType.from) {
+    schemaType._fields = { ...schemaType.from._fields, ...schemaType._fields };
+  }
   schemaType.selector = (selector = {}, context) => {
     if (schemaType.from) {
-      schemaType._fields = { ...schemaType.from._fields, ...schemaType._fields };
       selector = schemaType.from.selector(selector, context);
     }
     if (schemaType.inheritKey) {

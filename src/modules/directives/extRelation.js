@@ -304,11 +304,6 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
       fieldTypeWrap.isInterface() ? KIND.WHERE_INTERFACE : KIND.WHERE
     );
 
-    let value = parent[relationField];
-    if (Array.isArray(value)) {
-      value = { $in: value };
-    }
-
     let selector = await applyInputTransform({ parent, context })(
       args.where,
       whereType
@@ -323,24 +318,8 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
         ...selector,
         ...mmInterfaceModifier,
       };
-    } else if (fieldTypeWrap.realType().mmInherit && _.isEmpty(selector)) {
-      let ids = value || [];
-
-      return queryExecutor({
-        type: FIND_IDS,
-        collection: this.mmCollectionName,
-        modelType,
-        selector,
-        options: {
-          ids,
-          skip: args.skip,
-          limit: args.first,
-          selectorField: storeField,
-        },
-        context,
-      });
     }
-    selector[[storeField]] = value;
+    selector[storeField] = parent[relationField];
     return queryExecutor({
       type: FIND,
       collection: this.mmCollectionName,
