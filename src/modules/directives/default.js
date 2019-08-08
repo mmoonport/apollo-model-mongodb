@@ -4,6 +4,7 @@ import { appendTransform, reduceTransforms } from '../../inputTypes/utils';
 import { fieldInputTransform } from '../../inputTypes/transforms';
 import { TRANSFORM_TO_INPUT } from '../../inputTypes/handlers';
 import { CREATE } from '../../inputTypes/kinds';
+import { defaultFieldResolver } from 'graphql';
 
 export const typeDef = `directive @default(value: String!) on FIELD_DEFINITION`;
 
@@ -29,7 +30,7 @@ class DefaultDirective extends SchemaDirectiveVisitor {
       ],
     });
 
-    let resolve = field.resolve;
+    let resolve = field.resolve || defaultFieldResolver;
     field.resolve = async (parent, args, context, info) => {
       let result = await resolve(parent, args, context, info);
       if (result === undefined || result === null) {
