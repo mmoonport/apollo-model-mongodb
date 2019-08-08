@@ -4,15 +4,29 @@ import { appendTransform, reduceTransforms } from '../../inputTypes/utils';
 import { fieldInputTransform } from '../../inputTypes/transforms';
 import { TRANSFORM_TO_INPUT } from '../../inputTypes/handlers';
 import { CREATE } from '../../inputTypes/kinds';
-import { defaultFieldResolver } from 'graphql';
+import {
+  defaultFieldResolver,
+  GraphQLBoolean,
+  GraphQLFloat,
+  GraphQLInt,
+} from 'graphql';
+import TypeWrap from '../../typeWrap';
 
 export const typeDef = `directive @default(value: String!) on FIELD_DEFINITION`;
 
 class DefaultDirective extends SchemaDirectiveVisitor {
   visitFieldDefinition(field) {
     let { value } = this.args;
+    let typeWrap = new TypeWrap(field.type);
+    let realType = typeWrap.realType();
     try {
-      value = JSON.parse(value);
+      if (realType instanceof GraphQLBoolean) {
+        value = JSON.parse(value);
+      } else if (realType instanceof GraphQLFloat) {
+        value = parseFloat(value);
+      } else if (realType instanceof GraphQLInt) {
+        value = parseInt(value);
+      }
     } catch (e) {
       //skip parsing error
     }
