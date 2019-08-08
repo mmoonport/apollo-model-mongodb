@@ -7,7 +7,7 @@ class Inherit extends SchemaDirectiveVisitor {
   visitInterface(iface) {
     const { _typeMap: SchemaTypes } = this.schema;
     if (!iface.mmDiscriminatorField) {
-      iface.mmDiscriminatorField = '_type';
+      iface.mmDiscriminatorField = '_cls';
     }
     iface.mmInherit = true;
 
@@ -20,6 +20,19 @@ class Inherit extends SchemaDirectiveVisitor {
       }
     }.bind(iface);
 
+    iface.discriminatorValue = function() {
+      let parentName =
+        this.mmFrom && this.mmFrom.mmInherit
+          ? this.mmFrom.discriminatorValue()
+          : undefined;
+      let parts = [];
+      if (parentName) {
+        parts.push(parentName);
+      }
+      parts.push(this.name);
+      return parts.join('.');
+    }.bind(iface);
+
     const { from = null } = this.args;
     if (from) {
       let fromInherit = Object.values(SchemaTypes).find(
@@ -30,18 +43,42 @@ class Inherit extends SchemaDirectiveVisitor {
       }
       iface.mmFrom = fromInherit;
       iface._fields = { ...fromInherit._fields, ...iface._fields };
+      if (fromInherit.mmDiscriminatorField) {
+        iface.mmDiscriminatorField = fromInherit.mmDiscriminatorField;
+      }
+      if (fromInherit.mmCollectionName) {
+        iface.mmCollectionName = fromInherit.mmCollectionName;
+      }
     }
 
+    iface.mmDiscriminatorMap = iface.mmDiscriminatorMap || {};
+
     Object.values(SchemaTypes)
-      .filter(type => type._interfaces && type._interfaces.includes(iface))
+      .filter(
+        type =>
+          Array.isArray(type._interfaces) && type._interfaces.includes(iface)
+      )
       .forEach(type => {
+        iface._addFromInterfaces(type);
         type._fields = { ...iface._fields, ...type._fields };
-        if (!type.mmDiscriminator) {
-          type.mmDiscriminator = lowercaseFirstLetter(type.name);
-        }
       });
 
-    iface.mmDiscriminatorMap = iface.mmDiscriminatorMap || {};
+    iface.mmOnSchemaBuild = () => {
+      Object.values(SchemaTypes)
+        .filter(
+          type =>
+            Array.isArray(type._interfaces) && type._interfaces.includes(iface)
+        )
+        .forEach(type => {
+          if (type._interfaces[0] === iface) {
+            type.mmCollectionName = iface.mmCollectionName;
+            type.mmDiscriminator = [iface.discriminatorValue(), type.name].join(
+              '.'
+            );
+            type.mmDiscriminatorField = iface.mmDiscriminatorField;
+          }
+        });
+    };
 
     iface.mmOnSchemaInit = () => {
       Object.values(SchemaTypes)
@@ -50,10 +87,14 @@ class Inherit extends SchemaDirectiveVisitor {
             Array.isArray(type._interfaces) && type._interfaces.includes(iface)
         )
         .forEach(type => {
-          iface._addFromInterfaces(type);
-          type.mmDiscriminatorField = iface.mmDiscriminatorField;
+          let impls = this.schema._implementations[iface.name] || [];
+          if (!impls.find(i => i.name === type.name)) {
+            impls.push(type);
+          }
+          this.schema._implementations[iface.name] = impls;
           iface.mmDiscriminatorMap[type.mmDiscriminator] = type.name;
         });
+      console.log(JSON.stringify(iface.mmDiscriminatorMap));
     };
 
     iface.resolveType = doc => {

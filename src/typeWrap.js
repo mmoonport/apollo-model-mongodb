@@ -103,7 +103,14 @@ export default class TypeWrap {
   isAbstract = () => Boolean(this._abstract);
   interfaceType = () => this._inherited; //deprecated
   interfaceWithDirective = directive => {
-    return _.find(this._interfaces, iface => getDirective(iface, directive));
+    let found = _.find(this._interfaces, iface =>
+      getDirective(iface, directive)
+    );
+    if (found) return found;
+    if (this.mmFrom) {
+      let typeWrap = new TypeWrap(this.mmFrom);
+      return typeWrap.interfaceWithDirective(directive);
+    }
   };
   clone = () => {
     return new TypeWrap(this);

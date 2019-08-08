@@ -56,7 +56,7 @@ class Model extends SchemaDirectiveVisitor {
 
         //validate usage
         type._interfaces
-          .filter(i => i != iface)
+          .filter(i => i !== iface)
           .forEach(i => {
             if (getDirective(i, 'model')) {
               throw new SDLSyntaxException(
@@ -81,35 +81,21 @@ class Model extends SchemaDirectiveVisitor {
           });
       });
 
-    //Set discriminator
-    if (!iface.mmDiscriminatorField) {
-      iface.mmDiscriminatorField = '_type';
-    }
+    // iface.mmOnSchemaInit = () => {
+    //   Object.values(SchemaTypes)
+    //     .filter(
+    //       type =>
+    //         Array.isArray(type._interfaces) && type._interfaces.includes(iface)
+    //     )
+    //     .forEach(type => {
+    //       type.mmDiscriminatorField = iface.mmDiscriminatorField;
+    //       iface.mmDiscriminatorMap[type.mmDiscriminator] = type.name;
+    //     });
+    // };
 
-    Object.values(SchemaTypes)
-      .filter(type => type._interfaces && type._interfaces.includes(iface))
-      .forEach(type => {
-        if (!type.mmDiscriminator) {
-          type.mmDiscriminator = lowercaseFirstLetter(type.name);
-        }
-      });
-    iface.mmDiscriminatorMap = iface.mmDiscriminatorMap || {};
-
-    iface.mmOnSchemaInit = () => {
-      Object.values(SchemaTypes)
-        .filter(
-          type =>
-            Array.isArray(type._interfaces) && type._interfaces.includes(iface)
-        )
-        .forEach(type => {
-          type.mmDiscriminatorField = iface.mmDiscriminatorField;
-          iface.mmDiscriminatorMap[type.mmDiscriminator] = type.name;
-        });
-    };
-
-    iface.resolveType = doc => {
-      return iface.mmDiscriminatorMap[doc[iface.mmDiscriminatorField]];
-    };
+    // iface.resolveType = doc => {
+    //   return iface.mmDiscriminatorMap[doc[iface.mmDiscriminatorField]];
+    // };
     ////////////
   }
 }

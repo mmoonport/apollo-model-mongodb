@@ -78,14 +78,13 @@ export default class ModelMongo {
           args.where,
           whereType
         );
-        if (
-          typeWrap.interfaceWithDirective('model') &&
-          typeWrap.interfaceWithDirective('model').mmDiscriminatorField
-          // && !new TypeWrap(typeWrap.interfaceType()).isAbstract()
-        ) {
-          selector[
-            typeWrap.interfaceWithDirective('model').mmDiscriminatorField
-          ] = typeWrap.realType().mmDiscriminator;
+        if (typeWrap.realType().mmDiscriminatorField) {
+          let key = typeWrap.realType().mmDiscriminator;
+          if (typeWrap.realType().mmInherit) {
+            key = { $regex: `${typeWrap.realType().discriminatorValue()}.*` };
+          }
+
+          selector[typeWrap.realType().mmDiscriminatorField] = key;
         }
         return this.QueryExecutor({
           type: FIND,
@@ -129,13 +128,13 @@ export default class ModelMongo {
           args.where,
           whereType
         );
-        if (
-          typeWrap.interfaceWithDirective('model') &&
-          typeWrap.interfaceWithDirective('model').mmDiscriminatorField
-        ) {
-          selector[
-            typeWrap.interfaceWithDirective('model').mmDiscriminatorField
-          ] = typeWrap.realType().mmDiscriminator;
+        if (typeWrap.realType().mmDiscriminatorField) {
+          let key = typeWrap.realType().mmDiscriminator;
+          if (typeWrap.realType().mmInherit) {
+            key = { $regex: `${typeWrap.realType().discriminatorValue()}.*` };
+          }
+
+          selector[typeWrap.realType().mmDiscriminatorField] = key;
         }
         let total = await this.QueryExecutor({
           type: COUNT,
@@ -287,14 +286,13 @@ export default class ModelMongo {
         );
         // let entries = Object.entries(selector);
         // let [selectorField, id] = entries.length ? Object.entries(selector)[0]: ["_id"];
-        if (
-          typeWrap.interfaceWithDirective('model') &&
-          typeWrap.interfaceWithDirective('model').mmDiscriminatorField
-          // && !new TypeWrap(typeWrap.interfaceType()).isAbstract()
-        ) {
-          selector[
-            typeWrap.interfaceWithDirective('model').mmDiscriminatorField
-          ] = typeWrap.realType().mmDiscriminator;
+        if (typeWrap.realType().mmDiscriminatorField) {
+          let key = typeWrap.realType().mmDiscriminator;
+          if (typeWrap.realType().mmInherit) {
+            key = { $regex: `${typeWrap.realType().discriminatorValue()}.*` };
+          }
+
+          selector[typeWrap.realType().mmDiscriminatorField] = key;
         }
         return this.QueryExecutor({
           type: FIND_ONE,
@@ -669,7 +667,7 @@ export default class ModelMongo {
 
     let { _typeMap: SchemaTypes } = schema;
     let { Query, Mutation } = SchemaTypes;
-
+    this.Schema = schema;
     this.SchemaTypes = SchemaTypes;
     this.Query = Query;
     this.Mutation = Mutation;
@@ -702,16 +700,13 @@ export default class ModelMongo {
       this._onSchemaInit(type);
 
       let typeWrap = new TypeWrap(type);
-      if (
-        getDirective(type, 'model') ||
-        typeWrap.interfaceWithDirective('model')
-      ) {
+      if (type.mmCollectionName) {
         if (!typeWrap.isAbstract()) {
           // console.log(`Building queries for ${type.name}`);
           this._createAllQuery(type);
           this._createAllPaginationQuery(type);
           this._createSingleQuery(type);
-          this._createConnectionQuery(type);
+          // this._createConnectionQuery(type);
 
           if (!typeWrap.isInterface()) {
             this._createCreateMutation(type);

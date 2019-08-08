@@ -56,17 +56,17 @@ class RelationDirective extends SchemaDirectiveVisitor {
     // issue if interface defined after relation
     let isAbstract = getDirective(fieldTypeWrap.realType(), 'abstract');
 
-    if (
-      !(
-        getDirective(fieldTypeWrap.realType(), 'model') ||
-        fieldTypeWrap.interfaceWithDirective('model') ||
-        isAbstract
-      )
-    ) {
-      throw `Relation field type should be defined with Model directive or Abstract interface. (Field '${
-        field.name
-        }' of type '${fieldTypeWrap.realType().name}')`;
-    }
+    // if (
+    //   !(
+    //     getDirective(fieldTypeWrap.realType(), 'model') ||
+    //     fieldTypeWrap.interfaceWithDirective('model') ||
+    //     isAbstract
+    //   )
+    // ) {
+    //   throw `Relation field type should be defined with Model directive or Abstract interface. (Field '${
+    //     field.name
+    //     }' of type '${fieldTypeWrap.realType().name}')`;
+    // }
 
     this.mmObjectType = objectType;
     this.mmFieldTypeWrap = fieldTypeWrap;
