@@ -49,25 +49,66 @@ class Abstract extends SchemaDirectiveVisitor {
     Object.values(SchemaTypes)
       .filter(type => type._interfaces && type._interfaces.includes(iface))
       .forEach(type => {
-        iface.mmAbstractTypes.push(type);
         iface._addFromInterfaces(type);
         if (!getDirective(type, 'model')) {
-          throw new SDLSyntaxException(`
-            Type '${type.name}' is inherited from abstract interface '${iface.name}' and should be marked with @model directive
-          `, SHOULD_BE_MODEL, [type, iface]);
+          throw new SDLSyntaxException(
+            `
+            Type '${type.name}' is inherited from abstract interface '${
+              iface.name
+            }' and should be marked with @model directive
+          `,
+            SHOULD_BE_MODEL,
+            [type, iface]
+          );
         }
 
-        type._interfaces.filter(i => i !== iface).forEach(i => {
-          if (getDirective(i, 'model')) {
-            throw new SDLSyntaxException(`Type '${type.name}' can not inherit both '${iface.name}' and '${i.name}' because they marked with @abstract and @model directives`, ABSTRACT_WITH_MODEL, [i, iface]);
-          }
+        type._interfaces
+          .filter(i => i !== iface)
+          .forEach(i => {
+            if (getDirective(i, 'model')) {
+              throw new SDLSyntaxException(
+                `Type '${type.name}' can not inherit both '${
+                  iface.name
+                }' and '${
+                  i.name
+                }' because they marked with @abstract and @model directives`,
+                ABSTRACT_WITH_MODEL,
+                [i, iface]
+              );
+            }
 
-          if (getDirective(i, 'embedded')) {
-            throw new SDLSyntaxException(`Type '${type.name}' can not inherit both '${iface.name}' and '${i.name}' because they marked with @abstract and @embedded directives`, ABSTRACT_WITH_EMBEDDED, [i, iface]);
-          }
-        });
+            if (getDirective(i, 'embedded')) {
+              throw new SDLSyntaxException(
+                `Type '${type.name}' can not inherit both '${
+                  iface.name
+                }' and '${
+                  i.name
+                }' because they marked with @abstract and @embedded directives`,
+                ABSTRACT_WITH_EMBEDDED,
+                [i, iface]
+              );
+            }
+          });
         type._fields = { ...iface._fields, ...type._fields };
       });
+
+    iface.mmOnSchemaInit = () => {
+      Object.values(SchemaTypes)
+        .filter(
+          type =>
+            Array.isArray(type._interfaces) && type._interfaces.includes(iface)
+        )
+        .forEach(type => {
+          let impls = this.schema._implementations[iface.name] || [];
+          if (!impls.find(i => i.name === type.name)) {
+            impls.push(type);
+          }
+          this.schema._implementations[iface.name] = impls;
+          if (!iface.mmAbstractTypes.find(t => t.name === type.name)) {
+            iface.mmAbstractTypes.push(type);
+          }
+        });
+    };
 
     iface._setAbstractTypes();
     iface.resolveType = data => {
