@@ -104,9 +104,6 @@ class Abstract extends SchemaDirectiveVisitor {
             impls.push(type);
           }
           this.schema._implementations[iface.name] = impls;
-          if (!iface.mmAbstractTypes.find(t => t.name === type.name)) {
-            iface.mmAbstractTypes.push(type);
-          }
         });
     };
 
