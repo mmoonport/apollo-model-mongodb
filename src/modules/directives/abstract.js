@@ -93,20 +93,20 @@ class Abstract extends SchemaDirectiveVisitor {
         type._fields = { ...iface._fields, ...type._fields };
       });
 
-    // iface.mmOnSchemaInit = () => {
-    //   Object.values(SchemaTypes)
-    //     .filter(
-    //       type =>
-    //         Array.isArray(type._interfaces) && type._interfaces.includes(iface)
-    //     )
-    //     .forEach(type => {
-    //       let impls = this.schema._implementations[iface.name] || [];
-    //       if (!impls.find(i => i.name === type.name)) {
-    //         impls.push(type);
-    //       }
-    //       this.schema._implementations[iface.name] = impls;
-    //     });
-    // };
+    iface.mmOnSchemaInit = () => {
+      Object.values(SchemaTypes)
+        .filter(
+          type =>
+            Array.isArray(type._interfaces) && type._interfaces.includes(iface)
+        )
+        .forEach(type => {
+          let impls = this.schema._implementations[iface.name] || [];
+          if (!impls.find(i => i.name === type.name)) {
+            impls.push(type);
+          }
+          this.schema._implementations[iface.name] = impls;
+        });
+    };
 
     iface._setAbstractTypes();
     iface.resolveType = data => {
