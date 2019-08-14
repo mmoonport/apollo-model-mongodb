@@ -9,14 +9,20 @@ import { UserInputError } from 'apollo-server';
 
 import * as _ from 'lodash';
 
-import { allQueryArgs, getDirective, getRelationFieldName, prepareUpdateDoc } from '../../utils';
+import {
+  allQueryArgs,
+  getDirective,
+  getRelationFieldName,
+  prepareUpdateDoc,
+} from '../../utils';
 
 import {
   DELETE_ONE,
   DISTINCT,
   FIND_IDS,
   INSERT_MANY,
-  INSERT_ONE, UPDATE_ONE,
+  INSERT_ONE,
+  UPDATE_ONE,
 } from '../../queryExecutor';
 
 import InputTypes from '../../inputTypes';
@@ -76,7 +82,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
       getRelationFieldName(
         fieldTypeWrap.realType().name,
         relationField,
-        fieldTypeWrap.isMany(),
+        fieldTypeWrap.isMany()
       );
 
     appendTransform(field, HANDLER.TRANSFORM_TO_INPUT, {
@@ -95,6 +101,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
 
   _transformToInputWhere = ({ field }) => {
     const { field: relationField } = this.args;
+    const { _typeMap: SchemaTypes } = this.schema;
     let {
       mmFieldTypeWrap: fieldTypeWrap,
       mmCollectionName: collection,
@@ -128,6 +135,26 @@ class RelationDirective extends SchemaDirectiveVisitor {
           return { [storeField]: value };
         },
       });
+
+      fields.push({
+        name: `${field.name}_exists`,
+        type: GraphQLBoolean,
+        mmTransform: async (params, context) => {
+          params = params[fieldName];
+          let value = { $exists: params };
+          return { [storeField]: value };
+        },
+      });
+
+      fields.push({
+        name: `${field.name}_not`,
+        type: SchemaTypes['ObjectID'],
+        mmTransform: async (params, context) => {
+          params = params[fieldName];
+          let value = { $not: { $eq: params } };
+          return { [storeField]: value };
+        },
+      });
     });
     return fields;
   };
@@ -136,12 +163,12 @@ class RelationDirective extends SchemaDirectiveVisitor {
     let input = _.head(Object.values(params));
     if (Object.keys(input).length === 0) {
       throw new UserInputError(
-        `You should fill any field in ${type.name} type`,
+        `You should fill any field in ${type.name} type`
       );
     }
     if (!isMany && Object.keys(input).length > 1) {
       throw new UserInputError(
-        `You should not fill multiple fields in ${type.name} type`,
+        `You should not fill multiple fields in ${type.name} type`
       );
     }
     return params;
@@ -153,13 +180,13 @@ class RelationDirective extends SchemaDirectiveVisitor {
       let value = _.omit(c, field);
       return colls[parameter]
         ? {
-          ...colls,
-          [parameter]: [...colls[parameter], value],
-        }
+            ...colls,
+            [parameter]: [...colls[parameter], value],
+          }
         : {
-          ...colls,
-          [parameter]: [value],
-        };
+            ...colls,
+            [parameter]: [value],
+          };
     }, {});
 
   _groupByCollection = input => this._groupBy(input, 'mmCollectionName');
@@ -172,15 +199,15 @@ class RelationDirective extends SchemaDirectiveVisitor {
       fieldTypeWrap.realType(),
       fieldTypeWrap.isMany()
         ? isCreate
-        ? INPUT_CREATE_MANY_RELATION
-        : fieldTypeWrap.isRequired()
+          ? INPUT_CREATE_MANY_RELATION
+          : fieldTypeWrap.isRequired()
           ? INPUT_UPDATE_MANY_REQUIRED_RELATION
           : INPUT_UPDATE_MANY_RELATION
         : isCreate
         ? INPUT_CREATE_ONE_RELATION
         : fieldTypeWrap.isRequired()
-          ? INPUT_UPDATE_ONE_REQUIRED_RELATION
-          : INPUT_UPDATE_ONE_RELATION,
+        ? INPUT_UPDATE_ONE_REQUIRED_RELATION
+        : INPUT_UPDATE_ONE_RELATION
     );
     return [
       {
@@ -216,7 +243,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
       });
       if (ids.length === 0) {
         throw new UserInputError(
-          `No records found for selector - ${JSON.stringify(selector)}`,
+          `No records found for selector - ${JSON.stringify(selector)}`
         );
       }
       let id = this.isAbstract
@@ -260,7 +287,6 @@ class RelationDirective extends SchemaDirectiveVisitor {
     let connect_ids = [];
     let create_ids = [];
 
-
     if (input.connect) {
       ////Connect
       if (this.isAbstract) {
@@ -271,8 +297,8 @@ class RelationDirective extends SchemaDirectiveVisitor {
                 selector: { $or: connects },
                 collection,
                 context,
-              }).then(ids => ids.map(id => new DBRef(collection, id))),
-          ),
+              }).then(ids => ids.map(id => new DBRef(collection, id)))
+          )
         ).then(res => _.flatten(res));
       } else {
         let selector = { $or: input.connect };
@@ -300,8 +326,8 @@ class RelationDirective extends SchemaDirectiveVisitor {
                 docs: creates,
                 context,
                 collection,
-              }).then(ids => ids.map(id => new DBRef(collection, id))),
-          ),
+              }).then(ids => ids.map(id => new DBRef(collection, id)))
+          )
         ).then(res => _.flatten(res));
         // } else {
         //   _ids = await this._insertOneQuery({
@@ -336,8 +362,8 @@ class RelationDirective extends SchemaDirectiveVisitor {
                   selector: { $or: disconnects },
                   collection,
                   context,
-                }).then(res => res.map(id => new DBRef(collection, id))),
-            ),
+                }).then(res => res.map(id => new DBRef(collection, id)))
+            )
           ).then(res => _.flatten(res));
         } else {
           ////Disconnect
@@ -363,14 +389,14 @@ class RelationDirective extends SchemaDirectiveVisitor {
                       collection,
                       selector,
                       context,
-                    }).then(id => new DBRef(collection, id)),
-                  ),
-              ),
-            ),
+                    }).then(id => new DBRef(collection, id))
+                  )
+              )
+            )
           );
         } else {
           delete_ids = input.delete.map(async selector =>
-            this._deleteOneQuery({ selector, context }),
+            this._deleteOneQuery({ selector, context })
           );
         }
       }
@@ -394,30 +420,27 @@ class RelationDirective extends SchemaDirectiveVisitor {
           }
 
           return rid.toString() === did.toString();
-
         });
         return !found;
       });
     }
 
     if (input.updateMany) {
-      await Promise.all(input.updateMany.map(updateMany => {
-        let { where, data } = updateMany;
-        let {
-          doc,
-          validations,
-          arrayFilters,
-        } = prepareUpdateDoc(data);
-        if (Object.keys(validations).length !== 0) {
-          where = { $and: [where, validations] };
-        }
-        return this._updateOneQuery({
-          selector: where,
-          doc,
-          options: { arrayFilters },
-          context,
-        });
-      }));
+      await Promise.all(
+        input.updateMany.map(updateMany => {
+          let { where, data } = updateMany;
+          let { doc, validations, arrayFilters } = prepareUpdateDoc(data);
+          if (Object.keys(validations).length !== 0) {
+            where = { $and: [where, validations] };
+          }
+          return this._updateOneQuery({
+            selector: where,
+            doc,
+            options: { arrayFilters },
+            context,
+          });
+        })
+      );
     }
 
     if (ids) {
@@ -425,7 +448,6 @@ class RelationDirective extends SchemaDirectiveVisitor {
     } else {
       return {};
     }
-
   };
 
   _onSchemaBuild = ({ field }) => {
@@ -437,7 +459,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
     if (fieldTypeWrap.interfaceWithDirective('model')) {
       let { mmDiscriminator } = fieldTypeWrap.realType();
       let { mmDiscriminatorField } = fieldTypeWrap.interfaceWithDirective(
-        'model',
+        'model'
       );
       this.mmInterfaceModifier = {
         [mmDiscriminatorField]: mmDiscriminator,
@@ -452,7 +474,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
     if (fieldTypeWrap.isMany()) {
       let whereType = InputTypes.get(
         fieldTypeWrap.realType(),
-        fieldTypeWrap.isInterface() ? KIND.WHERE_INTERFACE : KIND.WHERE,
+        fieldTypeWrap.isInterface() ? KIND.WHERE_INTERFACE : KIND.WHERE
       );
       let orderByType = InputTypes.get(fieldTypeWrap.realType(), KIND.ORDER_BY);
 
@@ -516,7 +538,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
 
     let whereType = InputTypes.get(
       fieldTypeWrap.realType(),
-      fieldTypeWrap.isInterface() ? KIND.WHERE_INTERFACE : KIND.WHERE,
+      fieldTypeWrap.isInterface() ? KIND.WHERE_INTERFACE : KIND.WHERE
     );
 
     let value = parent[storeField];
@@ -525,7 +547,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
     if (!fieldTypeWrap.isAbstract()) {
       selector = await applyInputTransform({ parent, context })(
         args.where,
-        whereType,
+        whereType
       );
     }
 
@@ -562,9 +584,9 @@ class RelationDirective extends SchemaDirectiveVisitor {
             results.map(r => ({
               ...r,
               mmCollectionName: collection,
-            })),
-          ),
-        ),
+            }))
+          )
+        )
       ).then(res => _.flatten(res));
     } else {
       return this._findIDsQuery({
@@ -609,7 +631,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
           $and: [
             await applyInputTransform({ parent, context })(
               args.where,
-              whereType,
+              whereType
             ),
             { [relationField]: value },
           ],
@@ -742,21 +764,21 @@ const createInput = ({ name, initialType, kind, inputTypes }) => {
 
   let createType = inputTypes.get(
     initialType,
-    typeWrap.isInterface() ? KIND.CREATE_INTERFACE : KIND.CREATE,
+    typeWrap.isInterface() ? KIND.CREATE_INTERFACE : KIND.CREATE
   );
   let whereType = inputTypes.get(
     initialType,
-    typeWrap.isInterface() ? KIND.WHERE_INTERFACE : KIND.WHERE,
+    typeWrap.isInterface() ? KIND.WHERE_INTERFACE : KIND.WHERE
   );
 
   let updateType = inputTypes.get(
     initialType,
-    typeWrap.isInterface() ? KIND.UPDATE_INTERFACE : KIND.UPDATE,
+    typeWrap.isInterface() ? KIND.UPDATE_INTERFACE : KIND.UPDATE
   );
 
   let whereUniqueType = inputTypes.get(
     initialType,
-    typeWrap.isInterface() ? KIND.WHERE_UNIQUE_INTERFACE : KIND.WHERE_UNIQUE,
+    typeWrap.isInterface() ? KIND.WHERE_UNIQUE_INTERFACE : KIND.WHERE_UNIQUE
   );
 
   if (
@@ -783,13 +805,15 @@ const createInput = ({ name, initialType, kind, inputTypes }) => {
 
   if (
     [INPUT_UPDATE_MANY_RELATION, INPUT_UPDATE_MANY_REQUIRED_RELATION].includes(
-      kind,
+      kind
     )
   ) {
     let updateKind = INPUT_UPDATE_MANY_RELATION
       ? INPUT_UPDATE_MANY_RELATION_UPDATE
       : INPUT_UPDATE_MANY_REQUIRED_RELATION_UPDATE;
-    let updateManyType = new GraphQLList(inputTypes.get(initialType, updateKind));
+    let updateManyType = new GraphQLList(
+      inputTypes.get(initialType, updateKind)
+    );
     fields.updateMany = {
       name: 'updateMany',
       type: updateManyType,
@@ -797,7 +821,7 @@ const createInput = ({ name, initialType, kind, inputTypes }) => {
     };
   } else if (
     [INPUT_UPDATE_ONE_RELATION, INPUT_UPDATE_ONE_REQUIRED_RELATION].includes(
-      kind,
+      kind
     )
   ) {
     fields.update = {
@@ -809,19 +833,25 @@ const createInput = ({ name, initialType, kind, inputTypes }) => {
 
   if (
     [INPUT_UPDATE_MANY_RELATION, INPUT_UPDATE_MANY_REQUIRED_RELATION].includes(
-      kind,
+      kind
     )
   ) {
     fields.disconnect = {
       name: 'disconnect',
       type: whereUniqueType,
-      mmTransform: createInputTransform(whereUniqueType, typeWrap.isInterface()),
+      mmTransform: createInputTransform(
+        whereUniqueType,
+        typeWrap.isInterface()
+      ),
     };
 
     fields.delete = {
       name: 'delete',
       type: whereUniqueType,
-      mmTransform: createInputTransform(whereUniqueType, typeWrap.isInterface()),
+      mmTransform: createInputTransform(
+        whereUniqueType,
+        typeWrap.isInterface()
+      ),
     };
   }
 
@@ -856,12 +886,12 @@ const createUpdateManyInput = ({ name, initialType, kind, inputTypes }) => {
 
   let updateType = inputTypes.get(
     initialType,
-    typeWrap.isInterface() ? KIND.UPDATE_INTERFACE : KIND.UPDATE,
+    typeWrap.isInterface() ? KIND.UPDATE_INTERFACE : KIND.UPDATE
   );
 
   let whereUniqueType = inputTypes.get(
     initialType,
-    typeWrap.isInterface() ? KIND.WHERE_UNIQUE_INTERFACE : KIND.WHERE_UNIQUE,
+    typeWrap.isInterface() ? KIND.WHERE_UNIQUE_INTERFACE : KIND.WHERE_UNIQUE
   );
   fields.where = {
     name: 'where',
@@ -889,11 +919,11 @@ InputTypes.registerKind(INPUT_UPDATE_ONE_REQUIRED_RELATION, createInput);
 InputTypes.registerKind(INPUT_UPDATE_MANY_REQUIRED_RELATION, createInput);
 InputTypes.registerKind(
   INPUT_UPDATE_MANY_RELATION_UPDATE,
-  createUpdateManyInput,
+  createUpdateManyInput
 );
 InputTypes.registerKind(
   INPUT_UPDATE_MANY_REQUIRED_RELATION_UPDATE,
-  createUpdateManyInput,
+  createUpdateManyInput
 );
 
 export const schemaDirectives = {
