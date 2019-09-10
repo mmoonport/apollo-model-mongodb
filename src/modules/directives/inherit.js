@@ -9,6 +9,9 @@ class Inherit extends SchemaDirectiveVisitor {
     if (!iface.mmDiscriminatorField) {
       iface.mmDiscriminatorField = '_cls';
     }
+    if (!iface.mmInheritTypes) {
+      iface.mmInheritTypes = [];
+    }
     iface.mmInherit = true;
 
     iface._addFromInterfaces = function(type) {
