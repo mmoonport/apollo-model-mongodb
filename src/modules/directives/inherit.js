@@ -93,6 +93,7 @@ class Inherit extends SchemaDirectiveVisitor {
           }
           this.schema._implementations[iface.name] = impls;
           iface.mmDiscriminatorMap[type.mmDiscriminator] = type.name;
+          iface.mmInheritTypes = [...iface.mmInheritTypes, type];
         });
       console.log(JSON.stringify(iface.mmDiscriminatorMap));
     };

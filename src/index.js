@@ -365,6 +365,80 @@ export default class ModelMongo {
     };
   };
 
+  _createInterfaceCreateMutation = modelType => {
+    let args = [];
+
+    args = modelType.mmInheritTypes.map(t => {
+      let inputType;
+
+      try {
+        inputType = this._inputType(t, KIND.CREATE);
+        args = [
+          {
+            type: new GraphQLNonNull(inputType),
+            name: t.name,
+          },
+        ];
+      } catch (e) {
+        if (!(e instanceof EmptyTypeException)) {
+          throw e;
+        }
+      }
+    });
+
+    const name = `create${modelType.name}`;
+    this.Mutation._fields[name] = {
+      type: modelType,
+      args: args,
+      isDeprecated: false,
+      name,
+      resolve: async (parent, args, context) => {
+        let found;
+        let foundData = {};
+        Object.entries(args).forEach(([key, value]) => {
+          if (!found) {
+            if (key && value) {
+              found = modelType.mmInheritTypes.find(iT => iT.name === key);
+              foundData = value;
+            }
+          }
+        });
+        if (found) {
+          let typeWrap = new TypeWrap(found);
+          let inputType = this._inputType(found, KIND.CREATE);
+          let doc = await applyInputTransform({ parent, context })(
+            foundData,
+            inputType
+          );
+
+          if (
+            typeWrap.interfaceWithDirective('model') &&
+            typeWrap.interfaceWithDirective('model').mmDiscriminatorField
+            // && !new TypeWrap(typeWrap.interfaceType()).isAbstract()
+          ) {
+            doc[
+              typeWrap.interfaceWithDirective('model').mmDiscriminatorField
+            ] = typeWrap.realType().mmDiscriminator;
+          }
+
+          return this.QueryExecutor({
+            type: INSERT_ONE,
+            collection: modelType.mmCollectionName,
+            doc,
+            options: {},
+            context,
+          });
+        } else {
+          throw Error(
+            `Invalid type given to interface create. Must be one of ${modelType.mmInheritTypes
+              .map(i => i.name)
+              .join(', ')}`
+          );
+        }
+      },
+    };
+  };
+
   _createDeleteMutation = modelType => {
     let typeWrap = new TypeWrap(modelType);
     let whereUniqueType;
@@ -710,6 +784,8 @@ export default class ModelMongo {
 
           if (!typeWrap.isInterface()) {
             this._createCreateMutation(type);
+          } else {
+            this._createInterfaceCreateMutation(type);
           }
           this._createDeleteMutation(type);
           this._createDeleteManyMutation(type);
