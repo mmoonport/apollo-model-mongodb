@@ -376,7 +376,7 @@ export default class ModelMongo {
         args = [
           ...args,
           {
-            type: new GraphQLNonNull(inputType),
+            type: inputType,
             name: t.name,
           },
         ];
