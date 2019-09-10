@@ -368,12 +368,13 @@ export default class ModelMongo {
   _createInterfaceCreateMutation = modelType => {
     let args = [];
 
-    args = modelType.mmInheritTypes.map(t => {
+    modelType.mmInheritTypes.forEach(t => {
       let inputType;
 
       try {
         inputType = this._inputType(t, KIND.CREATE);
         args = [
+          ...args,
           {
             type: new GraphQLNonNull(inputType),
             name: t.name,
