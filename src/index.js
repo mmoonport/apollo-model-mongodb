@@ -424,7 +424,7 @@ export default class ModelMongo {
 
           return this.QueryExecutor({
             type: INSERT_ONE,
-            collection: modelType.mmCollectionName,
+            collection: found.mmCollectionName,
             doc,
             options: {},
             context,
