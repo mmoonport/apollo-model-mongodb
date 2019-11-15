@@ -545,7 +545,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
     if (!value) return fieldTypeWrap.isRequired() ? [] : null;
     let selector = {};
     if (!fieldTypeWrap.isAbstract()) {
-      selector = await applyInputTransform({ parent, context })(
+      selector = await applyInputTransform(context)(
         args.where,
         whereType
       );
@@ -629,7 +629,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
         }
         let selector = {
           $and: [
-            await applyInputTransform({ parent, context })(
+            await applyInputTransform(context)(
               args.where,
               whereType
             ),

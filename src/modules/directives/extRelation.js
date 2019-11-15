@@ -304,7 +304,7 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
       fieldTypeWrap.isInterface() ? KIND.WHERE_INTERFACE : KIND.WHERE
     );
 
-    let selector = await applyInputTransform({ parent, context })(
+    let selector = await applyInputTransform(context)(
       args.where,
       whereType
     );
@@ -357,7 +357,7 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
         }
         let selector = {
           $and: [
-            await applyInputTransform({ parent, context })(
+            await applyInputTransform(context)(
               args.where,
               whereType
             ),

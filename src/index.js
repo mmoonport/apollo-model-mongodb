@@ -74,7 +74,7 @@ export default class ModelMongo {
       isDeprecated: false,
       name,
       resolve: async (parent, args, context) => {
-        let selector = await applyInputTransform({ parent, context })(
+        let selector = await applyInputTransform(context)(
           args.where,
           whereType
         );
@@ -124,7 +124,7 @@ export default class ModelMongo {
       isDeprecated: false,
       name,
       resolve: async (parent, args, context) => {
-        let selector = await applyInputTransform({ parent, context })(
+        let selector = await applyInputTransform(context)(
           args.where,
           whereType
         );
@@ -242,10 +242,7 @@ export default class ModelMongo {
       name,
       resolve: async (parent, args, context) => {
         return {
-          _selector: await applyInputTransform({ parent, context })(
-            args.where,
-            whereType
-          ),
+          _selector: await applyInputTransform(context)(args.where, whereType),
           _skip: args.skip,
           _limit: args.first,
         };
@@ -280,7 +277,7 @@ export default class ModelMongo {
       isDeprecated: false,
       name,
       resolve: async (parent, args, context) => {
-        let selector = await applyInputTransform({ parent, context })(
+        let selector = await applyInputTransform(context)(
           args.where,
           whereUniqueType
         );
@@ -339,10 +336,7 @@ export default class ModelMongo {
         //   args.data,
         //   KIND.CREATE_ALWAYS
         // );
-        let doc = await applyInputTransform({ parent, context })(
-          args.data,
-          inputType
-        );
+        let doc = await applyInputTransform(context)(args.data, inputType);
 
         if (
           typeWrap.interfaceWithDirective('model') &&
@@ -407,10 +401,7 @@ export default class ModelMongo {
         if (found) {
           let typeWrap = new TypeWrap(found);
           let inputType = this._inputType(found, KIND.CREATE);
-          let doc = await applyInputTransform({ parent, context })(
-            foundData,
-            inputType
-          );
+          let doc = await applyInputTransform(context)(foundData, inputType);
 
           if (
             typeWrap.interfaceWithDirective('model') &&
@@ -465,7 +456,7 @@ export default class ModelMongo {
       isDeprecated: false,
       name,
       resolve: async (parent, args, context) => {
-        let selector = await applyInputTransform({ parent, context })(
+        let selector = await applyInputTransform(context)(
           args.where,
           whereUniqueType
         );
@@ -515,7 +506,7 @@ export default class ModelMongo {
       isDeprecated: false,
       name,
       resolve: async (parent, args, context) => {
-        let selector = await applyInputTransform({ parent, context })(
+        let selector = await applyInputTransform(context)(
           args.where,
           whereType
         );
@@ -576,7 +567,7 @@ export default class ModelMongo {
         //   args.data,
         //   KIND.UPDATE_ALWAYS
         // );
-        let selector = await applyInputTransform({ parent, context })(
+        let selector = await applyInputTransform(context)(
           args.where,
           whereType
         );
@@ -598,10 +589,7 @@ export default class ModelMongo {
           context,
         });
 
-        let data = await applyInputTransform({ parent, context })(
-          args.data,
-          updateType
-        );
+        let data = await applyInputTransform(context)(args.data, updateType);
         let {
           doc,
           validations,
