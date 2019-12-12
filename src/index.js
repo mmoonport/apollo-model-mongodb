@@ -582,13 +582,6 @@ export default class ModelMongo {
           ] = typeWrap.realType().mmDiscriminator;
         }
 
-        parent = await this.QueryExecutor({
-          type: FIND_ONE,
-          collection: modelType.mmCollectionName,
-          selector,
-          context,
-        });
-
         let data = await applyInputTransform(context)(args.data, updateType);
         let {
           doc,

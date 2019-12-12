@@ -224,8 +224,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
     ];
   };
 
-  _transformInputOne = isCreate => async (params, resolverArgs) => {
-    let { parent, context } = resolverArgs;
+  _transformInputOne = isCreate => async (params, context) => {
     let { mmStoreField: storeField, mmRelationField: relationField } = this;
     let input = _.head(Object.values(params));
     let collection = this.mmCollectionName;
@@ -277,9 +276,8 @@ class RelationDirective extends SchemaDirectiveVisitor {
       };
     }
   };
-  _transformInputMany = isCreate => async (params, resolverArgs) => {
+  _transformInputMany = isCreate => async (params, context) => {
     let { mmStoreField: storeField, mmCollectionName: collection } = this;
-    let { parent, context } = resolverArgs;
     let input = _.head(Object.values(params));
 
     let disconnect_ids = [];
@@ -350,8 +348,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
     if (isCreate) {
       ids = [...connect_ids, ...create_ids];
     } else {
-      ids = parent ? parent[storeField] || [] : [];
-      ids = [...ids, ...connect_ids, ...create_ids];
+      ids = [...connect_ids, ...create_ids];
 
       if (input.disconnect) {
         if (this.isAbstract) {
@@ -545,10 +542,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
     if (!value) return fieldTypeWrap.isRequired() ? [] : null;
     let selector = {};
     if (!fieldTypeWrap.isAbstract()) {
-      selector = await applyInputTransform(context)(
-        args.where,
-        whereType
-      );
+      selector = await applyInputTransform(context)(args.where, whereType);
     }
 
     if (fieldTypeWrap.isInterface()) {
@@ -629,10 +623,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
         }
         let selector = {
           $and: [
-            await applyInputTransform(context)(
-              args.where,
-              whereType
-            ),
+            await applyInputTransform(context)(args.where, whereType),
             { [relationField]: value },
           ],
         };

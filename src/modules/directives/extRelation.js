@@ -128,8 +128,7 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
     ];
   };
 
-  _transformInputOne = isCreate => async (params, resolverArgs) => {
-    let { parent, context } = resolverArgs;
+  _transformInputOne = isCreate => async (params, context) => {
     let {
       mmStoreField: storeField,
       mmRelationField: relationField,
@@ -209,9 +208,8 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
     }
   };
 
-  _transformInputMany = isCreate => async (params, resolverArgs) => {
+  _transformInputMany = isCreate => async (params, context) => {
     let { mmStoreField: storeField } = this;
-    let { parent, context } = resolverArgs;
     let input = _.head(Object.values(params));
 
     let ids = [];
