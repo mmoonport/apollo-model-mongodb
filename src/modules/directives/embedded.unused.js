@@ -96,7 +96,7 @@ class EmbeddedDirective extends SchemaDirectiveVisitor {
       fields.push({
         name: fieldName,
         type: inputType,
-        mmTransform: async (params, context) => {
+        mmTransform: async (params, {context}) => {
           params = params[fieldName];
           let value = await queryExecutor({
             type: DISTINCT,

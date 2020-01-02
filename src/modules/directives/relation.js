@@ -123,7 +123,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
           let value = await queryExecutor({
             type: DISTINCT,
             collection,
-            context,
+            context: context.context,
             selector: await applyInputTransform(context)(params, inputType),
             options: {
               key: relationField,
@@ -238,7 +238,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
       let ids = await this._distinctQuery({
         collection,
         selector,
-        context,
+        context: context.context,
       });
       if (ids.length === 0) {
         throw new UserInputError(
@@ -294,7 +294,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
               this._distinctQuery({
                 selector: { $or: connects },
                 collection,
-                context,
+                context: context.context,
               }).then(ids => ids.map(id => new DBRef(collection, id)))
           )
         ).then(res => _.flatten(res));
@@ -302,7 +302,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
         let selector = { $or: input.connect };
         connect_ids = this._distinctQuery({
           selector,
-          context,
+          context: context.context,
         });
       }
 
@@ -322,7 +322,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
               ////if creates.length>0
               this._insertManyQuery({
                 docs: creates,
-                context,
+                context: context.context,
                 collection,
               }).then(ids => ids.map(id => new DBRef(collection, id)))
           )
@@ -337,18 +337,18 @@ class RelationDirective extends SchemaDirectiveVisitor {
       } else {
         create_ids = this._insertManyQuery({
           docs,
-          context,
+          context: context.context,
         });
       }
     }
     connect_ids = await connect_ids;
     create_ids = await create_ids;
 
-    let ids;
+    let ids = context.parent[storeField];
     if (isCreate) {
-      ids = [...connect_ids, ...create_ids];
+      ids = [...ids, ...connect_ids, ...create_ids];
     } else {
-      ids = [...connect_ids, ...create_ids];
+      ids = [...ids, ...connect_ids, ...create_ids];
 
       if (input.disconnect) {
         if (this.isAbstract) {
@@ -358,7 +358,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
                 this._distinctQuery({
                   selector: { $or: disconnects },
                   collection,
-                  context,
+                  context: context.context,
                 }).then(res => res.map(id => new DBRef(collection, id)))
             )
           ).then(res => _.flatten(res));
@@ -367,7 +367,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
           let selector = { $or: input.disconnect };
           disconnect_ids = await this._distinctQuery({
             selector,
-            context,
+            context: context.context,
           });
         }
 
@@ -385,7 +385,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
                     this._deleteOneQuery({
                       collection,
                       selector,
-                      context,
+                      context: context.context,
                     }).then(id => new DBRef(collection, id))
                   )
               )
@@ -393,7 +393,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
           );
         } else {
           delete_ids = input.delete.map(async selector =>
-            this._deleteOneQuery({ selector, context })
+            this._deleteOneQuery({ selector, context: context.context })
           );
         }
       }
@@ -434,7 +434,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
             selector: where,
             doc,
             options: { arrayFilters },
-            context,
+            context: context.context,
           });
         })
       );
@@ -542,7 +542,10 @@ class RelationDirective extends SchemaDirectiveVisitor {
     if (!value) return fieldTypeWrap.isRequired() ? [] : null;
     let selector = {};
     if (!fieldTypeWrap.isAbstract()) {
-      selector = await applyInputTransform(context)(args.where, whereType);
+      selector = await applyInputTransform({ parent, context, info })(
+        args.where,
+        whereType
+      );
     }
 
     if (fieldTypeWrap.isInterface()) {
@@ -573,7 +576,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
               selectorField: relationField,
               ids: ids.map(id => id.$id),
             },
-            context,
+            context: context.context,
           }).then(results =>
             results.map(r => ({
               ...r,
@@ -590,7 +593,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
           selectorField: relationField,
           ids: value,
         },
-        context,
+        context: context.context,
       });
     }
   };
@@ -623,7 +626,10 @@ class RelationDirective extends SchemaDirectiveVisitor {
         }
         let selector = {
           $and: [
-            await applyInputTransform(context)(args.where, whereType),
+            await applyInputTransform({ parent, context, info })(
+              args.where,
+              whereType
+            ),
             { [relationField]: value },
           ],
         };

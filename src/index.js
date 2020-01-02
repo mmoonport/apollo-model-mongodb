@@ -73,11 +73,12 @@ export default class ModelMongo {
       args: allQueryArgs({ whereType, orderByType }),
       isDeprecated: false,
       name,
-      resolve: async (parent, args, context) => {
-        let selector = await applyInputTransform(context)(
-          args.where,
-          whereType
-        );
+      resolve: async (parent, args, context, info) => {
+        let selector = await applyInputTransform({
+          context,
+          info,
+          parent,
+        })(args.where, whereType);
         if (typeWrap.realType().mmDiscriminatorField) {
           let key = typeWrap.realType().mmDiscriminator;
           if (typeWrap.realType().mmInherit) {
@@ -123,11 +124,12 @@ export default class ModelMongo {
       args: allQueryArgs({ whereType, orderByType }),
       isDeprecated: false,
       name,
-      resolve: async (parent, args, context) => {
-        let selector = await applyInputTransform(context)(
-          args.where,
-          whereType
-        );
+      resolve: async (parent, args, context, info) => {
+        let selector = await applyInputTransform({
+          context,
+          info,
+          parent,
+        })(args.where, whereType);
         if (typeWrap.realType().mmDiscriminatorField) {
           let key = typeWrap.realType().mmDiscriminator;
           if (typeWrap.realType().mmInherit) {
@@ -240,9 +242,13 @@ export default class ModelMongo {
       args: allQueryArgs({ whereType, orderByType }),
       isDeprecated: false,
       name,
-      resolve: async (parent, args, context) => {
+      resolve: async (parent, args, context, info) => {
         return {
-          _selector: await applyInputTransform(context)(args.where, whereType),
+          _selector: await applyInputTransform({
+            context,
+            info,
+            parent,
+          })(args.where, whereType),
           _skip: args.skip,
           _limit: args.first,
         };
@@ -276,11 +282,12 @@ export default class ModelMongo {
       deprecationReason: undefined,
       isDeprecated: false,
       name,
-      resolve: async (parent, args, context) => {
-        let selector = await applyInputTransform(context)(
-          args.where,
-          whereUniqueType
-        );
+      resolve: async (parent, args, context, info) => {
+        let selector = await applyInputTransform({
+          context,
+          info,
+          parent,
+        })(args.where, whereUniqueType);
         // let entries = Object.entries(selector);
         // let [selectorField, id] = entries.length ? Object.entries(selector)[0]: ["_id"];
         if (typeWrap.realType().mmDiscriminatorField) {
@@ -330,13 +337,17 @@ export default class ModelMongo {
       args: args,
       isDeprecated: false,
       name,
-      resolve: async (parent, args, context) => {
+      resolve: async (parent, args, context, info) => {
         // let data = await applyAlwaysInputTransform({ parent, context })(
         //   modelType,
         //   args.data,
         //   KIND.CREATE_ALWAYS
         // );
-        let doc = await applyInputTransform(context)(args.data, inputType);
+        let doc = await applyInputTransform({
+          context,
+          info,
+          parent,
+        })(args.data, inputType);
 
         if (
           typeWrap.interfaceWithDirective('model') &&
@@ -387,7 +398,7 @@ export default class ModelMongo {
       args: args,
       isDeprecated: false,
       name,
-      resolve: async (parent, args, context) => {
+      resolve: async (parent, args, context, info) => {
         let found;
         let foundData = {};
         Object.entries(args).forEach(([key, value]) => {
@@ -401,7 +412,11 @@ export default class ModelMongo {
         if (found) {
           let typeWrap = new TypeWrap(found);
           let inputType = this._inputType(found, KIND.CREATE);
-          let doc = await applyInputTransform(context)(foundData, inputType);
+          let doc = await applyInputTransform({
+            context,
+            info,
+            parent,
+          })(foundData, inputType);
 
           if (
             typeWrap.interfaceWithDirective('model') &&
@@ -455,11 +470,12 @@ export default class ModelMongo {
       args,
       isDeprecated: false,
       name,
-      resolve: async (parent, args, context) => {
-        let selector = await applyInputTransform(context)(
-          args.where,
-          whereUniqueType
-        );
+      resolve: async (parent, args, context, info) => {
+        let selector = await applyInputTransform({
+          context,
+          info,
+          parent,
+        })(args.where, whereUniqueType);
         if (
           typeWrap.interfaceWithDirective('model') &&
           typeWrap.interfaceWithDirective('model').mmDiscriminatorField
@@ -505,11 +521,12 @@ export default class ModelMongo {
       args,
       isDeprecated: false,
       name,
-      resolve: async (parent, args, context) => {
-        let selector = await applyInputTransform(context)(
-          args.where,
-          whereType
-        );
+      resolve: async (parent, args, context, info) => {
+        let selector = await applyInputTransform({
+          context,
+          info,
+          parent,
+        })(args.where, whereType);
         if (
           typeWrap.interfaceWithDirective('model') &&
           typeWrap.interfaceWithDirective('model').mmDiscriminatorField
@@ -561,16 +578,17 @@ export default class ModelMongo {
       args,
       isDeprecated: false,
       name,
-      resolve: async (parent, args, context) => {
+      resolve: async (parent, args, context, info) => {
         // let data = await applyAlwaysInputTransform({ parent, context })(
         //   modelType,
         //   args.data,
         //   KIND.UPDATE_ALWAYS
         // );
-        let selector = await applyInputTransform(context)(
-          args.where,
-          whereType
-        );
+        let selector = await applyInputTransform({
+          context,
+          info,
+          parent,
+        })(args.where, whereType);
 
         if (
           typeWrap.interfaceWithDirective('model') &&
@@ -582,7 +600,18 @@ export default class ModelMongo {
           ] = typeWrap.realType().mmDiscriminator;
         }
 
-        let data = await applyInputTransform(context)(args.data, updateType);
+        let parentRecord = await this.QueryExecutor({
+          type: FIND_ONE,
+          collection: modelType.mmCollectionName,
+          selector,
+          context,
+        });
+
+        let data = await applyInputTransform({
+          context,
+          info,
+          parent: parentRecord,
+        })(args.data, updateType);
         let {
           doc,
           validations,

@@ -146,7 +146,7 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
       // console.log(selector);
       let ids = await this._distinctQuery({
         selector,
-        context,
+        context: context.context,
       });
       if (ids.length === 0) {
         throw new UserInputError(
@@ -220,7 +220,7 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
         let selector = { $or: input.disconnect };
         ids = await this._distinctQuery({
           selector,
-          context,
+          context:context.context,
         });
         if (ids.length === 0) {
           throw new UserInputError(
@@ -230,7 +230,7 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
       }
       if (input.delete) {
         let delete_ids = input.delete.map(selector =>
-          this._deleteOneQuery({ selector, context })
+          this._deleteOneQuery({ selector, context:context.context })
         );
         delete_ids = await Promise.all(delete_ids);
         delete_ids = delete_ids.filter(id => id);
@@ -243,7 +243,7 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
         let selector = { $or: input.connect };
         ids = await this._distinctQuery({
           selector,
-          context,
+          context:context.context
         });
         // if (ids.length === 0) {
         //   throw new UserInputError(
@@ -256,7 +256,7 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
         let docs = input.create;
         let create_ids = await this._insertManyQuery({
           docs,
-          context,
+          context:context.context,
         });
         ids = [...ids, ...create_ids];
       }
@@ -284,7 +284,7 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
       collection: this.mmCollectionName,
       selector,
       options: {},
-      context,
+      context:context.context,
     });
   };
 
@@ -302,7 +302,7 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
       fieldTypeWrap.isInterface() ? KIND.WHERE_INTERFACE : KIND.WHERE
     );
 
-    let selector = await applyInputTransform(context)(
+    let selector = await applyInputTransform({ parent, context, info })(
       args.where,
       whereType
     );
@@ -327,7 +327,7 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
         skip: args.skip,
         limit: args.first,
       },
-      context,
+      context: context.context,
     });
   };
 
@@ -355,7 +355,7 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
         }
         let selector = {
           $and: [
-            await applyInputTransform(context)(
+            await applyInputTransform({ parent, context, info })(
               args.where,
               whereType
             ),
