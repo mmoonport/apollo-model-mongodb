@@ -284,7 +284,7 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
       collection: this.mmCollectionName,
       selector,
       options: {},
-      context:context.context,
+      context:context,
     });
   };
 
@@ -327,7 +327,7 @@ class ExtRelationDirective extends SchemaDirectiveVisitor {
         skip: args.skip,
         limit: args.first,
       },
-      context: context.context,
+      context: context,
     });
   };
 
