@@ -277,6 +277,8 @@ class RelationDirective extends SchemaDirectiveVisitor {
     }
   };
   _transformInputMany = isCreate => async (params, context) => {
+    context.parent = context.parent || {};
+
     let { mmStoreField: storeField, mmCollectionName: collection } = this;
     let input = _.head(Object.values(params));
 
