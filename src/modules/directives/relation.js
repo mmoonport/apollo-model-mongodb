@@ -35,7 +35,7 @@ import {
 import * as HANDLER from '../../inputTypes/handlers';
 import * as KIND from '../../inputTypes/kinds';
 import * as Transforms from '../../inputTypes/transforms';
-import { DBRef } from 'mongodb';
+import { DBRef, ObjectID } from 'mongodb';
 
 export const INPUT_CREATE_ONE_RELATION = 'createOneRelation';
 export const INPUT_CREATE_MANY_RELATION = 'createManyRelation';
@@ -53,6 +53,33 @@ export const setQueryExecutor = q => (queryExecutor = q);
 export const typeDef = `directive @relation(field:String="_id", storeField:String=null ) on FIELD_DEFINITION`;
 
 const dbRef = dbRef => dbRef.toJSON();
+
+const filterIds = removeIds => r => {
+  let found = removeIds.find(d => {
+    let did = d;
+    let rid = r;
+    if (d instanceof DBRef) {
+      let { $id: dID } = dbRef(d);
+      did = dID;
+    }
+
+    if (r instanceof DBRef) {
+      let { $id: rID } = dbRef(r);
+      rid = rID;
+    }
+
+    if (rid instanceof ObjectID) {
+      rid = rid.toString();
+    }
+
+    if (did instanceof ObjectID) {
+      did = did.toString();
+    }
+
+    return rid === did;
+  });
+  return !found;
+};
 
 class RelationDirective extends SchemaDirectiveVisitor {
   visitFieldDefinition(field, { objectType }) {
@@ -282,6 +309,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
     let { mmStoreField: storeField, mmCollectionName: collection } = this;
     let input = _.head(Object.values(params));
 
+    let ids = context.parent[storeField] || [];
     let disconnect_ids = [];
     let delete_ids = [];
     let connect_ids = [];
@@ -346,11 +374,12 @@ class RelationDirective extends SchemaDirectiveVisitor {
     connect_ids = await connect_ids;
     create_ids = await create_ids;
 
-    let ids = context.parent[storeField] || [];
     if (isCreate) {
-      ids = [...ids, ...connect_ids, ...create_ids];
+      const addedIds = [...connect_ids, ...create_ids].filter(filterIds(ids));
+      ids = [...ids, ...addedIds];
     } else {
-      ids = [...ids, ...connect_ids, ...create_ids];
+      const addedIds = [...connect_ids, ...create_ids].filter(filterIds(ids));
+      ids = [...ids, ...addedIds];
 
       if (input.disconnect) {
         if (this.isAbstract) {
@@ -404,24 +433,7 @@ class RelationDirective extends SchemaDirectiveVisitor {
 
       delete_ids = delete_ids.filter(id => id);
 
-      ids = ids.filter(r => {
-        let found = [...disconnect_ids, ...delete_ids].find(d => {
-          let did = d;
-          let rid = r;
-          if (d instanceof DBRef) {
-            let { $id: dID } = dbRef(d);
-            did = dID;
-          }
-
-          if (r instanceof DBRef) {
-            let { $id: rID } = dbRef(r);
-            rid = rID;
-          }
-
-          return rid.toString() === did.toString();
-        });
-        return !found;
-      });
+      ids = ids.filter(filterIds([...disconnect_ids, ...delete_ids]));
     }
 
     if (input.updateMany) {
