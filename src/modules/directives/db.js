@@ -11,6 +11,7 @@ export const typeDef = `directive @db(name:String!, defaultValue:String=null) on
 class DirectiveDB extends SchemaDirectiveVisitor {
   visitFieldDefinition(field) {
     const { name } = this.args;
+    field.mmDBName = name;
     appendTransform(field, HANDLER.TRANSFORM_INPUT, {
       [KIND.CREATE]: this._renameTransform(field.name, name),
       [KIND.UPDATE]: this._renameTransform(field.name, name),

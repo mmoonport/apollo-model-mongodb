@@ -70,7 +70,7 @@ const filterIds = removeIds => r => {
 
     if (rid instanceof ObjectID) {
       rid = rid.toString();
-    }
+w    }
 
     if (did instanceof ObjectID) {
       did = did.toString();
