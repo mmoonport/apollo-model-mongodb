@@ -255,6 +255,26 @@ class RelationDirective extends SchemaDirectiveVisitor {
     let { mmStoreField: storeField, mmRelationField: relationField } = this;
     let input = _.head(Object.values(params));
     let collection = this.mmCollectionName;
+
+    if (!isCreate && input.update) {
+      let _id = context.parent[storeField];
+      if (_id) {
+        if (this.isAbstract) {
+          let ref = _id.toJSON();
+          _id = ref.$id;
+          collection = ref.$ref;
+        }
+
+        let { doc } = prepareUpdateDoc(input.update);
+        await this._updateOneQuery({
+          collection,
+          selector: { _id },
+          doc,
+          context,
+        });
+      }
+    }
+
     if (input.connect) {
       ////Connect
       let selector = input.connect;
